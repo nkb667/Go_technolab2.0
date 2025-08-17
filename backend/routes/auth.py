@@ -62,8 +62,9 @@ async def setup_admin(
     # Create admin user
     hashed_password = auth_service.get_password_hash(user_create.password)
     admin_user = User(
-        **user_create.dict(exclude={"password"}),
+        email=user_create.email,
         password=hashed_password,
+        name=user_create.name,
         role=UserRole.ADMIN
     )
     
