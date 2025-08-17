@@ -1,7 +1,6 @@
 # Classroom management routes
 from fastapi import APIRouter, Depends, HTTPException, status
-from auth import get_current_user_with_db, require_teacher_or_admin
-from database import DatabaseService
+from dependencies import get_current_user, require_teacher_or_admin, get_db_service
 from models import *
 from typing import List, Dict, Any
 
@@ -9,8 +8,8 @@ router = APIRouter(prefix="/classrooms", tags=["classrooms"])
 
 @router.get("/", response_model=List[ClassroomResponse])
 async def get_my_classrooms(
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     if current_user.role == UserRole.TEACHER or current_user.role == UserRole.ADMIN:
         # Teachers and admins see classrooms they created
@@ -43,8 +42,8 @@ async def get_my_classrooms(
 @router.get("/{classroom_id}", response_model=Classroom)
 async def get_classroom(
     classroom_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     classroom = await db_service.get_classroom_by_id(classroom_id)
     if not classroom:
@@ -67,7 +66,7 @@ async def get_classroom(
 async def create_classroom(
     classroom_create: ClassroomCreate,
     current_user: User = Depends(require_teacher_or_admin),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    db_service = Depends(get_db_service)
 ):
     classroom = await db_service.create_classroom(classroom_create, current_user.id)
     return classroom
@@ -76,8 +75,8 @@ async def create_classroom(
 async def update_classroom(
     classroom_id: str,
     classroom_update: ClassroomUpdate,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     classroom = await db_service.get_classroom_by_id(classroom_id)
     if not classroom:
@@ -113,8 +112,8 @@ async def update_classroom(
 @router.delete("/{classroom_id}")
 async def delete_classroom(
     classroom_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     classroom = await db_service.get_classroom_by_id(classroom_id)
     if not classroom:
@@ -144,8 +143,8 @@ async def delete_classroom(
 @router.post("/{classroom_id}/join")
 async def join_classroom_by_id(
     classroom_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     if current_user.role != UserRole.STUDENT:
         raise HTTPException(
@@ -175,8 +174,8 @@ async def join_classroom_by_id(
 @router.post("/join")
 async def join_classroom_by_code(
     invite_code: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     if current_user.role != UserRole.STUDENT:
         raise HTTPException(
@@ -206,8 +205,8 @@ async def join_classroom_by_code(
 @router.delete("/{classroom_id}/leave")
 async def leave_classroom(
     classroom_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     classroom = await db_service.get_classroom_by_id(classroom_id)
     if not classroom:
@@ -228,8 +227,8 @@ async def leave_classroom(
 @router.get("/{classroom_id}/students", response_model=List[UserResponse])
 async def get_classroom_students(
     classroom_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     classroom = await db_service.get_classroom_by_id(classroom_id)
     if not classroom:
@@ -258,8 +257,8 @@ async def get_classroom_students(
 @router.get("/{classroom_id}/progress")
 async def get_classroom_progress(
     classroom_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     classroom = await db_service.get_classroom_by_id(classroom_id)
     if not classroom:

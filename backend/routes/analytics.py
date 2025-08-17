@@ -1,7 +1,6 @@
 # Analytics and reporting routes
 from fastapi import APIRouter, Depends, HTTPException, status
-from auth import get_current_user_with_db, require_admin, require_teacher_or_admin
-from database import DatabaseService
+from dependencies import get_current_user, require_admin, require_teacher_or_admin, get_db_service
 from models import *
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
@@ -11,7 +10,7 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 @router.get("/dashboard")
 async def get_admin_dashboard(
     current_user: User = Depends(require_admin),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    db_service = Depends(get_db_service)
 ):
     # Get basic counts
     total_users = await db_service.db.users.count_documents({})
@@ -67,7 +66,7 @@ async def get_admin_dashboard(
 @router.get("/courses", response_model=List[CourseAnalytics])
 async def get_course_analytics(
     current_user: User = Depends(require_teacher_or_admin),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    db_service = Depends(get_db_service)
 ):
     analytics = await db_service.get_course_analytics()
     return analytics
@@ -76,7 +75,7 @@ async def get_course_analytics(
 async def get_course_detailed_analytics(
     course_id: str,
     current_user: User = Depends(require_teacher_or_admin),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    db_service = Depends(get_db_service)
 ):
     course = await db_service.get_course_by_id(course_id)
     if not course:
@@ -127,8 +126,8 @@ async def get_course_detailed_analytics(
 @router.get("/student/{student_id}")
 async def get_student_analytics(
     student_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     # Check permissions
     if (current_user.id != student_id and 
@@ -191,8 +190,8 @@ async def get_student_analytics(
 @router.get("/classroom/{classroom_id}")
 async def get_classroom_analytics(
     classroom_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     classroom = await db_service.get_classroom_by_id(classroom_id)
     if not classroom:

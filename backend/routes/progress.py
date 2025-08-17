@@ -1,7 +1,6 @@
 # Progress tracking routes
 from fastapi import APIRouter, Depends, HTTPException, status
-from auth import get_current_user_with_db
-from database import DatabaseService
+from dependencies import get_current_user, get_db_service
 from models import *
 from typing import List, Dict, Any
 
@@ -9,8 +8,8 @@ router = APIRouter(prefix="/progress", tags=["progress"])
 
 @router.get("/me", response_model=List[Progress])
 async def get_my_progress(
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     progress = await db_service.get_user_progress(current_user.id)
     return progress
@@ -18,8 +17,8 @@ async def get_my_progress(
 @router.get("/me/course/{course_id}", response_model=List[Progress])
 async def get_my_course_progress(
     course_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     progress = await db_service.get_course_progress(current_user.id, course_id)
     return progress
@@ -27,8 +26,8 @@ async def get_my_course_progress(
 @router.post("/", response_model=Progress)
 async def create_progress(
     progress_create: ProgressCreate,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     # Verify lesson exists
     lesson = await db_service.get_lesson_by_id(progress_create.lessonId)
@@ -45,8 +44,8 @@ async def create_progress(
 async def update_progress(
     progress_id: str,
     progress_update: ProgressUpdate,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     # Get existing progress
     existing_progress = await db_service.db.progress.find_one({"id": progress_id})
@@ -78,8 +77,8 @@ async def update_progress(
 
 @router.get("/dashboard")
 async def get_progress_dashboard(
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     # Get user's progress summary
     user_progress = await db_service.get_user_progress(current_user.id)

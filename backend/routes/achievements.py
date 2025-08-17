@@ -1,7 +1,6 @@
 # Achievement system routes
 from fastapi import APIRouter, Depends, HTTPException, status
-from auth import get_current_user_with_db
-from database import DatabaseService
+from dependencies import get_current_user, get_db_service
 from models import *
 from typing import List
 
@@ -9,8 +8,8 @@ router = APIRouter(prefix="/achievements", tags=["achievements"])
 
 @router.get("/me", response_model=List[Achievement])
 async def get_my_achievements(
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     achievements = await db_service.get_user_achievements(current_user.id)
     return achievements
@@ -19,8 +18,8 @@ async def get_my_achievements(
 async def award_achievement(
     achievement_create: AchievementCreate,
     user_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     # Only allow awarding achievements to self or if admin
     if user_id != current_user.id and current_user.role != UserRole.ADMIN:
@@ -47,7 +46,7 @@ async def award_achievement(
     return created_achievement
 
 # Automatic achievement checking system
-async def check_and_award_achievements(user_id: str, db_service: DatabaseService):
+async def check_and_award_achievements(user_id: str, db_service):
     """Check if user qualifies for new achievements and award them"""
     user = await db_service.get_user_by_id(user_id)
     if not user:
@@ -128,8 +127,8 @@ async def check_and_award_achievements(user_id: str, db_service: DatabaseService
 @router.post("/check/{user_id}")
 async def check_user_achievements(
     user_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     # Only allow checking own achievements or if admin
     if user_id != current_user.id and current_user.role != UserRole.ADMIN:
