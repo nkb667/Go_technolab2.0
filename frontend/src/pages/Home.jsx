@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { apiService } from "../services/api";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Progress } from "../components/ui/progress";
@@ -12,21 +14,76 @@ import {
   Clock,
   Star,
   Zap,
-  Users
+  Users,
+  Loader2
 } from "lucide-react";
-import { studentProgress, courseModules } from "../data/mock";
 
 const Home = () => {
-  const currentModule = courseModules.find(module => 
-    module.lessons.some(lesson => !lesson.completed)
-  );
+  const { user } = useAuth();
+  const [dashboardData, setDashboardData] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchDashboardData();
+    fetchCourses();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await apiService.getProgressDashboard();
+      setDashboardData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      // Set default data if API fails
+      setDashboardData({
+        totalProgress: 0,
+        completedLessons: 0,
+        totalLessons: 0,
+        totalXP: user?.profile?.totalXP || 0,
+        streak: user?.profile?.streak || 0,
+        level: user?.profile?.level || 1,
+        courseProgress: [],
+        recentAchievements: []
+      });
+    }
+  };
+
+  const fetchCourses = async () => {
+    try {
+      const response = await apiService.getCourses();
+      setCourses(response.data);
+    } catch (error) {
+      console.error('Failed to fetch courses:', error);
+      setError('Не удалось загрузить курсы');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            <span className="text-gray-600">Загрузка...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentCourse = courses.length > 0 ? courses[0] : null;
+  const stats = dashboardData || {};
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Hero Section */}
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-4">
-          Изучай <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Go</span> весело!
+          Добро пожаловать, <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{user?.name}!</span>
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
           Интерактивный курс для подростков по изучению языка программирования Go. 
@@ -59,8 +116,8 @@ const Home = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-800 mb-2">{studentProgress.totalProgress}%</div>
-            <Progress value={studentProgress.totalProgress} className="h-2" />
+            <div className="text-2xl font-bold text-gray-800 mb-2">{stats.totalProgress || 0}%</div>
+            <Progress value={stats.totalProgress || 0} className="h-2" />
           </CardContent>
         </Card>
 
@@ -72,8 +129,8 @@ const Home = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-800">{studentProgress.completedLessons}/{studentProgress.totalLessons}</div>
-            <p className="text-sm text-gray-500">из {studentProgress.totalLessons} уроков</p>
+            <div className="text-2xl font-bold text-gray-800">{stats.completedLessons || 0}/{stats.totalLessons || 0}</div>
+            <p className="text-sm text-gray-500">из {stats.totalLessons || 0} уроков</p>
           </CardContent>
         </Card>
 
@@ -85,7 +142,7 @@ const Home = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-800">{studentProgress.streak} дня</div>
+            <div className="text-2xl font-bold text-gray-800">{stats.streak || 0} дня</div>
             <p className="text-sm text-gray-500">подряд</p>
           </CardContent>
         </Card>
@@ -98,46 +155,58 @@ const Home = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-800">{studentProgress.points} XP</div>
-            <p className="text-sm text-gray-500">уровень {studentProgress.level}</p>
+            <div className="text-2xl font-bold text-gray-800">{stats.totalXP || 0} XP</div>
+            <p className="text-sm text-gray-500">уровень {stats.level || 1}</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Current Module */}
-      {currentModule && (
+      {/* Current Course */}
+      {currentCourse && (
         <Card className="mb-12 border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl font-bold text-gray-800">Текущий модуль</CardTitle>
-                <CardDescription className="text-gray-600">{currentModule.title}</CardDescription>
+                <CardTitle className="text-xl font-bold text-gray-800">Доступные курсы</CardTitle>
+                <CardDescription className="text-gray-600">{currentCourse.title}</CardDescription>
               </div>
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">
-                В прогрессе
+                Доступен
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700 mb-4">{currentModule.description}</p>
+            <p className="text-gray-700 mb-4">{currentCourse.description}</p>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center text-sm text-gray-600">
                   <Clock className="w-4 h-4 mr-1" />
-                  {currentModule.lessons.length} уроков
+                  {currentCourse.lessons?.length || 0} уроков
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <Star className="w-4 h-4 mr-1" />
+                  {currentCourse.duration || "2 месяца"}
                 </div>
               </div>
-              <div className="text-sm font-medium text-indigo-600">
-                {currentModule.progress}% завершено
-              </div>
             </div>
-            <Progress value={currentModule.progress} className="mb-4" />
             <Link to="/course">
               <Button className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700">
-                Продолжить урок
+                Начать изучение
               </Button>
             </Link>
           </CardContent>
+        </Card>
+      )}
+
+      {/* Empty state if no courses */}
+      {courses.length === 0 && !loading && (
+        <Card className="mb-12 border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-gray-800">Курсы пока не добавлены</CardTitle>
+            <CardDescription className="text-gray-600">
+              Администратор системы должен создать курсы для начала обучения.
+            </CardDescription>
+          </CardHeader>
         </Card>
       )}
 
@@ -187,19 +256,17 @@ const Home = () => {
       </div>
 
       {/* Recent Achievements */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
-            Последние достижения
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {studentProgress.achievements
-              .filter(achievement => achievement.earned)
-              .slice(0, 3)
-              .map((achievement) => (
+      {stats.recentAchievements && stats.recentAchievements.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
+              Последние достижения
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {stats.recentAchievements.map((achievement) => (
                 <div key={achievement.id} className="flex items-center space-x-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
                   <div className="text-2xl">{achievement.icon}</div>
                   <div>
@@ -208,9 +275,10 @@ const Home = () => {
                   </div>
                 </div>
               ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
