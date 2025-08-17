@@ -1,7 +1,6 @@
 # Lesson management routes
 from fastapi import APIRouter, Depends, HTTPException, status
-from auth import get_current_user_with_db, require_admin
-from database import DatabaseService
+from dependencies import get_current_user, require_admin, get_db_service
 from models import *
 from typing import List
 
