@@ -32,6 +32,45 @@ async def register(
     
     return UserResponse(**created_user.dict())
 
+@router.post("/setup-admin", response_model=UserResponse)
+async def setup_admin(
+    user_create: UserCreate,
+    auth_service = Depends(get_auth_service),
+    db_service = Depends(get_db_service)
+):
+    """Create the first admin user. Only works if no admin exists."""
+    
+    # Check if any admin already exists
+    admin_count = await db_service.db.users.count_documents({"role": "admin"})
+    if admin_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Admin user already exists. Use regular registration."
+        )
+    
+    # Force role to be admin
+    user_create.role = UserRole.ADMIN
+    
+    # Check if email already exists
+    existing_user = await db_service.get_user_by_email(user_create.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    # Create admin user
+    hashed_password = auth_service.get_password_hash(user_create.password)
+    admin_user = User(
+        **user_create.dict(exclude={"password"}),
+        password=hashed_password,
+        role=UserRole.ADMIN
+    )
+    
+    created_user = await db_service.create_user(admin_user)
+    
+    return UserResponse(**created_user.dict())
+
 @router.post("/login", response_model=Token)
 async def login(
     user_login: UserLogin,
