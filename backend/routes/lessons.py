@@ -25,8 +25,8 @@ async def get_lesson(
 async def submit_code(
     lesson_id: str,
     submission: CodeSubmission,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     lesson = await db_service.get_lesson_by_id(lesson_id)
     if not lesson:
