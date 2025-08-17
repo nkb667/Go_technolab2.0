@@ -9,8 +9,8 @@ router = APIRouter(prefix="/lessons", tags=["lessons"])
 @router.get("/{lesson_id}", response_model=Lesson)
 async def get_lesson(
     lesson_id: str,
-    current_user: User = Depends(get_current_user_with_db),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    current_user: User = Depends(get_current_user),
+    db_service = Depends(get_db_service)
 ):
     lesson = await db_service.get_lesson_by_id(lesson_id)
     if not lesson:
