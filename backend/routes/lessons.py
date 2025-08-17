@@ -103,7 +103,7 @@ async def submit_code(
 async def create_lesson(
     lesson_create: LessonCreate,
     current_user: User = Depends(require_admin),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    db_service = Depends(get_db_service)
 ):
     # Verify course exists
     course = await db_service.get_course_by_id(lesson_create.courseId)
