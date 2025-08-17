@@ -122,7 +122,7 @@ async def update_lesson(
     lesson_id: str,
     lesson_update: LessonUpdate,
     current_user: User = Depends(require_admin),
-    db_service: DatabaseService = Depends(lambda: DatabaseService(None))
+    db_service = Depends(get_db_service)
 ):
     lesson = await db_service.get_lesson_by_id(lesson_id)
     if not lesson:
