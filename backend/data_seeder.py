@@ -5,25 +5,19 @@ from auth import AuthService
 import asyncio
 
 async def seed_initial_data(db_service: DatabaseService, auth_service: AuthService):
-    """Seed the database with initial courses and lessons"""
+    """Initialize database with clean state - no pre-seeded data"""
     
-    # Check if data already exists
-    existing_courses = await db_service.get_courses(limit=1)
-    if existing_courses:
-        print("Database already seeded, skipping...")
-        return
+    # Check if any admin user exists
+    admin_count = await db_service.db.users.count_documents({"role": "admin"})
     
-    print("Seeding database with initial data...")
+    print("Database initialized with clean state.")
+    print("Create your first admin user through registration or use the setup endpoint.")
     
-    # Create admin user
-    admin_password = auth_service.get_password_hash("admin123")
-    admin_user = User(
-        email="admin@goacademy.ru",
-        password=admin_password,
-        name="Администратор",
-        role=UserRole.ADMIN
-    )
-    await db_service.create_user(admin_user)
+    # Only log the initialization, don't create any default data
+    if admin_count == 0:
+        print("No admin users found - system is ready for first admin registration.")
+    else:
+        print(f"Found {admin_count} admin user(s) in the system.")
     
     # Create sample teacher
     teacher_password = auth_service.get_password_hash("teacher123")
