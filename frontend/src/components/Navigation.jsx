@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { Button } from "./ui/button";
 import { 
   BookOpen, 
@@ -9,21 +10,28 @@ import {
   Home as HomeIcon,
   Trophy,
   Settings,
-  UserCog
+  UserCog,
+  LogOut,
+  User
 } from "lucide-react";
 
 const Navigation = () => {
   const location = useLocation();
+  const { user, logout, isAdmin, isTeacher } = useAuth();
 
   const navItems = [
-    { path: "/", label: "Главная", icon: HomeIcon },
-    { path: "/course", label: "Курс", icon: BookOpen },
-    { path: "/practice", label: "Практика", icon: Code },
-    { path: "/progress", label: "Прогресс", icon: TrendingUp },
-    { path: "/classroom", label: "Класс", icon: Users },
-    { path: "/admin", label: "Админ", icon: Settings },
-    { path: "/classroom-management", label: "Управление", icon: UserCog },
-  ];
+    { path: "/", label: "Главная", icon: HomeIcon, roles: ['student', 'teacher', 'admin'] },
+    { path: "/course", label: "Курс", icon: BookOpen, roles: ['student', 'teacher', 'admin'] },
+    { path: "/practice", label: "Практика", icon: Code, roles: ['student', 'teacher', 'admin'] },
+    { path: "/progress", label: "Прогресс", icon: TrendingUp, roles: ['student', 'teacher', 'admin'] },
+    { path: "/classroom", label: "Класс", icon: Users, roles: ['student', 'teacher', 'admin'] },
+    { path: "/admin", label: "Админ", icon: Settings, roles: ['admin'] },
+    { path: "/classroom-management", label: "Управление", icon: UserCog, roles: ['teacher', 'admin'] },
+  ].filter(item => !item.roles || item.roles.includes(user?.role));
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
@@ -61,10 +69,28 @@ const Navigation = () => {
 
           <div className="flex items-center space-x-4">
             <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-              150 XP
+              {user?.profile?.totalXP || 0} XP
             </div>
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
-              А
+            
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+                <div className="hidden sm:block text-sm">
+                  <div className="font-medium text-gray-800">{user?.name}</div>
+                  <div className="text-gray-500 text-xs capitalize">{user?.role}</div>
+                </div>
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-gray-500 hover:text-red-600 hover:bg-red-50"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
